@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { TrendingUp, TrendingDown, Wallet, Plus } from 'lucide-react';
 import api from '../services/api.ts';
 import { Transaction } from '../types/index.ts';
+import TransactionModal from '../components/transactions/TransactionModal.tsx';
 
 export default function Dashboard() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
   const [stats, setStats] = useState({
     totalIncome: 0,
     totalExpenses: 0,
@@ -54,7 +56,10 @@ export default function Dashboard() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-        <button className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+        <button
+          onClick={() => setShowModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+        >
           <Plus className="w-5 h-5" />
           Add Transaction
         </button>
@@ -164,6 +169,13 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+      
+      {showModal && (
+        <TransactionModal
+          onClose={() => setShowModal(false)}
+          onSaved={fetchData}
+        />
+      )}
     </div>
   );
 }

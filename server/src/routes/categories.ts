@@ -62,6 +62,18 @@ router.put('/:id', authenticate, async (req: AuthRequest, res) => {
   try {
     const { name, color, icon } = req.body;
 
+    // Prevent editing the "Other" category
+    const { data: existing } = await supabase
+      .from('categories')
+      .select('name')
+      .eq('id', req.params.id)
+      .eq('user_id', req.user!.id)
+      .single();
+
+    if (existing?.name === 'Other') {
+      return res.status(403).json({ error: 'The "Other" category cannot be edited' });
+    }
+
     const { data, error } = await supabase
       .from('categories')
       .update({ name, color, icon })
@@ -80,13 +92,65 @@ router.put('/:id', authenticate, async (req: AuthRequest, res) => {
 });
 
 // Delete category
+// ?mode=with_transactions → delete category + all its transactions
+// ?mode=reassign (default) → reassign transactions to user's "Other" category, then delete
 router.delete('/:id', authenticate, async (req: AuthRequest, res) => {
   try {
+    const { mode } = req.query;
+    const userId = req.user!.id;
+    const categoryId = req.params.id;
+
+    // Verify the category belongs to this user
+    const { data: category, error: catError } = await supabase
+      .from('categories')
+      .select('id, type, name')
+      .eq('id', categoryId)
+      .eq('user_id', userId)
+      .single();
+
+    if (catError || !category) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    // Prevent deleting the "Other" category
+    if (category.name === 'Other') {
+      return res.status(403).json({ error: 'The "Other" category cannot be deleted' });
+    }
+
+    if (mode === 'with_transactions') {
+      // Delete all transactions using this category first
+      const { error: txError } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('category_id', categoryId)
+        .eq('user_id', userId);
+
+      if (txError) throw txError;
+    } else {
+      // Reassign transactions to the user's "Other" category of the same type
+      const { data: otherCategory } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('type', category.type)
+        .eq('name', 'Other')
+        .single();
+
+      if (otherCategory) {
+        await supabase
+          .from('transactions')
+          .update({ category_id: otherCategory.id })
+          .eq('category_id', categoryId)
+          .eq('user_id', userId);
+      }
+    }
+
+    // Delete the category
     const { error } = await supabase
       .from('categories')
       .delete()
-      .eq('id', req.params.id)
-      .eq('user_id', req.user!.id);
+      .eq('id', categoryId)
+      .eq('user_id', userId);
 
     if (error) throw error;
 

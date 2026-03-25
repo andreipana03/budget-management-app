@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertTriangle } from 'lucide-react';
 import api from '../services/api.ts';
 import { Category } from '../types/index.ts';
 
@@ -9,6 +9,7 @@ export default function Categories() {
   const [activeTab, setActiveTab] = useState<'expense' | 'income'>('expense');
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     type: 'expense' as 'expense' | 'income',
@@ -48,10 +49,10 @@ export default function Categories() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this category?')) return;
+  const handleDelete = async (id: string, mode: 'with_transactions' | 'reassign') => {
     try {
-      await api.delete(`/categories/${id}`);
+      await api.delete(`/categories/${id}?mode=${mode}`);
+      setDeleteTarget(null);
       fetchCategories();
     } catch (error) {
       console.error('Error deleting category:', error);
@@ -69,7 +70,13 @@ export default function Categories() {
     setShowModal(true);
   };
 
-  const filteredCategories = categories.filter((cat) => cat.type === activeTab);
+  const filteredCategories = categories
+    .filter((cat) => cat.type === activeTab)
+    .sort((a, b) => {
+      if (a.name === 'Other') return 1;
+      if (b.name === 'Other') return -1;
+      return a.name.localeCompare(b.name);
+    });
 
   const colors = [
     '#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#6366F1',
@@ -146,19 +153,21 @@ export default function Categories() {
               </div>
             </div>
             <div className="flex gap-2">
-              <button
-                onClick={() => handleEdit(category)}
-                className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
-              >
-                <Pencil className="w-4 h-4" />
-              </button>
-              {!category.is_default && (
-                <button
-                  onClick={() => handleDelete(category.id)}
-                  className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+              {category.name !== 'Other' && (
+                <>
+                  <button
+                    onClick={() => handleEdit(category)}
+                    className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setDeleteTarget(category)}
+                    className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -245,6 +254,50 @@ export default function Categories() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md shadow-xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-full">
+                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+              </div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Delete "{deleteTarget.name}"
+              </h2>
+            </div>
+
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              This category may be used by existing transactions. How would you like to proceed?
+            </p>
+
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => handleDelete(deleteTarget.id, 'with_transactions')}
+                className="w-full px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium text-left px-4"
+              >
+                <span className="font-semibold">Delete category and all its transactions</span>
+                <p className="text-red-200 text-xs mt-0.5">All transactions in this category will be permanently removed</p>
+              </button>
+
+              <button
+                onClick={() => handleDelete(deleteTarget.id, 'reassign')}
+                className="w-full px-4 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors text-sm font-medium text-left"
+              >
+                <span className="font-semibold">Delete category only</span>
+                <p className="text-yellow-100 text-xs mt-0.5">Transactions will be moved to the "Other" category</p>
+              </button>
+
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
