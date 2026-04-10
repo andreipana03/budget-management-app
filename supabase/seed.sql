@@ -6,25 +6,25 @@ RETURNS void AS $$
 BEGIN
     -- Default Expense Categories
     INSERT INTO categories (user_id, name, type, color, icon, is_default) VALUES
-    (p_user_id, 'Food & Dining', 'expense', '#EF4444', 'utensils', true),
-    (p_user_id, 'Transportation', 'expense', '#F59E0B', 'car', true),
-    (p_user_id, 'Shopping', 'expense', '#EC4899', 'shopping-bag', true),
-    (p_user_id, 'Entertainment', 'expense', '#8B5CF6', 'film', true),
-    (p_user_id, 'Bills & Utilities', 'expense', '#3B82F6', 'receipt', true),
-    (p_user_id, 'Healthcare', 'expense', '#10B981', 'heart-pulse', true),
-    (p_user_id, 'Education', 'expense', '#6366F1', 'book-open', true),
-    (p_user_id, 'Housing', 'expense', '#14B8A6', 'home', true),
-    (p_user_id, 'Personal Care', 'expense', '#F97316', 'sparkles', true),
-    (p_user_id, 'Other', 'expense', '#6B7280', 'more-horizontal', true);
+    (p_user_id, 'Food & Dining', 'expense', '#F43F5E', '🍽️', true),
+    (p_user_id, 'Transportation', 'expense', '#F59E0B', '🚗', true),
+    (p_user_id, 'Shopping', 'expense', '#A855F7', '🛍️', true),
+    (p_user_id, 'Entertainment', 'expense', '#6366F1', '🎬', true),
+    (p_user_id, 'Bills & Utilities', 'expense', '#3B82F6', '⚡', true),
+    (p_user_id, 'Healthcare', 'expense', '#10B981', '🏥', true),
+    (p_user_id, 'Education', 'expense', '#06B6D4', '📚', true),
+    (p_user_id, 'Housing', 'expense', '#14B8A6', '🏠', true),
+    (p_user_id, 'Personal Care', 'expense', '#EC4899', '✨', true),
+    (p_user_id, 'Other', 'expense', '#94A3B8', '', true);
 
     -- Default Income Categories
     INSERT INTO categories (user_id, name, type, color, icon, is_default) VALUES
-    (p_user_id, 'Salary', 'income', '#10B981', 'briefcase', true),
-    (p_user_id, 'Freelance', 'income', '#3B82F6', 'laptop', true),
-    (p_user_id, 'Investments', 'income', '#8B5CF6', 'trending-up', true),
-    (p_user_id, 'Gifts', 'income', '#EC4899', 'gift', true),
-    (p_user_id, 'Refunds', 'income', '#F59E0B', 'arrow-left-right', true),
-    (p_user_id, 'Other', 'income', '#6B7280', 'more-horizontal', true);
+    (p_user_id, 'Salary', 'income', '#10B981', '💼', true),
+    (p_user_id, 'Freelance', 'income', '#3B82F6', '💻', true),
+    (p_user_id, 'Investments', 'income', '#8B5CF6', '📈', true),
+    (p_user_id, 'Gifts', 'income', '#F43F5E', '🎁', true),
+    (p_user_id, 'Refunds', 'income', '#F59E0B', '↩️', true),
+    (p_user_id, 'Other', 'income', '#94A3B8', '', true);
 END;
 $$ LANGUAGE plpgsql;
 

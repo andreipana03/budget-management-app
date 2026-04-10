@@ -27,7 +27,15 @@ export default function Layout() {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 dark:border-gray-700">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Budget Manager</h1>
+            <div className="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+                <circle cx="16" cy="16" r="15" fill="#16a34a" stroke="#15803d" strokeWidth="1.5"/>
+                <circle cx="16" cy="16" r="11" fill="none" stroke="#22c55e" strokeWidth="1"/>
+                <text x="16" y="22" fontFamily="Georgia, serif" fontSize="22" fontWeight="bold"
+                      fill="white" textAnchor="middle">$</text>
+              </svg>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Budget Manager</h1>
+            </div>
           </div>
 
           {/* Navigation */}

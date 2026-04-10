@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { supabase } from '../services/supabase';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { getExchangeRate } from '../services/exchangeRate';
 
 const router = Router();
 
@@ -77,7 +78,18 @@ router.get('/status/:year/:month', authenticate, async (req: AuthRequest, res) =
 // Create budget
 router.post('/', authenticate, async (req: AuthRequest, res) => {
   try {
-    const { category_id, month, year, limit_amount } = req.body;
+    const { category_id, month, year, limit_amount, currency } = req.body;
+
+    const { data: preferences } = await supabase
+      .from('user_preferences')
+      .select('default_currency')
+      .eq('user_id', req.user!.id)
+      .single();
+
+    const defaultCurrency = preferences?.default_currency || 'USD';
+    const inputCurrency = currency || defaultCurrency;
+    const exchangeRate = await getExchangeRate(inputCurrency, defaultCurrency);
+    const convertedLimit = parseFloat(limit_amount) * exchangeRate;
 
     const { data, error } = await supabase
       .from('budgets')
@@ -86,7 +98,7 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
         category_id,
         month,
         year,
-        limit_amount,
+        limit_amount: convertedLimit,
       })
       .select('*, categories(*)')
       .single();
@@ -103,11 +115,22 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
 // Update budget
 router.put('/:id', authenticate, async (req: AuthRequest, res) => {
   try {
-    const { limit_amount } = req.body;
+    const { limit_amount, currency } = req.body;
+
+    const { data: preferences } = await supabase
+      .from('user_preferences')
+      .select('default_currency')
+      .eq('user_id', req.user!.id)
+      .single();
+
+    const defaultCurrency = preferences?.default_currency || 'USD';
+    const inputCurrency = currency || defaultCurrency;
+    const exchangeRate = await getExchangeRate(inputCurrency, defaultCurrency);
+    const convertedLimit = parseFloat(limit_amount) * exchangeRate;
 
     const { data, error } = await supabase
       .from('budgets')
-      .update({ limit_amount })
+      .update({ limit_amount: convertedLimit })
       .eq('id', req.params.id)
       .eq('user_id', req.user!.id)
       .select('*, categories(*)')

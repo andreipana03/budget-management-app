@@ -10,6 +10,7 @@ import transactionsRouter from './routes/transactions';
 import categoriesRouter from './routes/categories';
 import budgetsRouter from './routes/budgets';
 import preferencesRouter from './routes/preferences';
+import exchangeRatesRouter from './routes/exchangeRates';
 import { updateExchangeRates } from './services/exchangeRate';
 
 const app = express();
@@ -42,6 +43,7 @@ app.use('/api/transactions', transactionsRouter);
 app.use('/api/categories', categoriesRouter);
 app.use('/api/budgets', budgetsRouter);
 app.use('/api/preferences', preferencesRouter);
+app.use('/api/exchange-rates', exchangeRatesRouter);
 
 // Update exchange rates daily at midnight
 cron.schedule('0 0 * * *', () => {

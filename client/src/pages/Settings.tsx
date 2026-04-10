@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { Save } from 'lucide-react';
 import api from '../services/api.ts';
 import { useTheme } from '../context/ThemeContext.tsx';
+import { usePreferences } from '../context/PreferencesContext.tsx';
 import { UserPreferences } from '../types/index.ts';
 
 export default function Settings() {
   const { theme, setTheme } = useTheme();
+  const { setCurrency } = usePreferences();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
@@ -43,6 +45,7 @@ export default function Settings() {
     try {
       await api.put('/preferences', formData);
       setTheme(formData.theme);
+      setCurrency(formData.default_currency);
       alert('Settings saved successfully!');
     } catch (error) {
       console.error('Error saving preferences:', error);

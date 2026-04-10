@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext.tsx';
 import { ThemeProvider } from './context/ThemeContext.tsx';
+import { PreferencesProvider } from './context/PreferencesContext.tsx';
 import Login from './pages/Login.tsx';
 import Register from './pages/Register.tsx';
 import AuthCallback from './pages/AuthCallback.tsx';
@@ -71,7 +72,9 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <AppRoutes />
+        <PreferencesProvider>
+          <AppRoutes />
+        </PreferencesProvider>
       </AuthProvider>
     </ThemeProvider>
   );

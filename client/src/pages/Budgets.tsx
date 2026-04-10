@@ -2,8 +2,12 @@ import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import api from '../services/api.ts';
 import { Budget, Category } from '../types/index.ts';
+import CategoryIcon from '../components/categories/CategoryIcon.tsx';
+import { usePreferences } from '../context/PreferencesContext.tsx';
 
 export default function Budgets() {
+  const { currency, convert, savedCurrency } = usePreferences();
+
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -16,6 +20,7 @@ export default function Budgets() {
     month: currentMonth,
     year: currentYear,
     limit_amount: '',
+    currency: 'USD',
   });
 
   useEffect(() => {
@@ -41,7 +46,7 @@ export default function Budgets() {
     e.preventDefault();
     try {
       if (editingBudget) {
-        await api.put(`/budgets/${editingBudget.id}`, { limit_amount: formData.limit_amount });
+        await api.put(`/budgets/${editingBudget.id}`, { limit_amount: formData.limit_amount, currency: formData.currency });
       } else {
         await api.post('/budgets', formData);
       }
@@ -52,6 +57,7 @@ export default function Budgets() {
         month: currentMonth,
         year: currentYear,
         limit_amount: '',
+        currency: currency,
       });
       fetchData();
     } catch (error) {
@@ -76,6 +82,7 @@ export default function Budgets() {
       month: budget.month,
       year: budget.year,
       limit_amount: budget.limit_amount.toString(),
+      currency: currency,
     });
     setShowModal(true);
   };
@@ -130,8 +137,9 @@ export default function Budgets() {
         ) : (
           budgets.map((budget) => {
             const percentage = budget.percentage || 0;
-            const spent = budget.spent || 0;
-            const remaining = budget.remaining || 0;
+            const spent = convert(budget.spent || 0, savedCurrency);
+            const remaining = convert(budget.remaining || 0, savedCurrency);
+            const limit = convert(parseFloat(budget.limit_amount.toString()), savedCurrency);
 
             return (
               <div
@@ -140,27 +148,24 @@ export default function Budgets() {
               >
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: budget.categories?.color + '20' }}
-                    >
-                      <span style={{ color: budget.categories?.color }}>
-                        {budget.categories?.name.charAt(0)}
-                      </span>
-                    </div>
+                    <CategoryIcon
+                      icon={budget.categories?.icon}
+                      color={budget.categories?.color || '#6B7280'}
+                      size="md"
+                    />
                     <div>
                       <h3 className="font-semibold text-gray-900 dark:text-white">
                         {budget.categories?.name}
                       </h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        ${spent.toFixed(2)} of ${parseFloat(budget.limit_amount.toString()).toFixed(2)}
+                        {spent.toFixed(2)} {currency} of {limit.toFixed(2)} {currency}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleEdit(budget)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+                      className="p-2 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded"
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
@@ -200,7 +205,7 @@ export default function Budgets() {
                         : 'text-green-600 dark:text-green-400'
                     }`}
                   >
-                    ${Math.abs(remaining).toFixed(2)} {remaining < 0 ? 'over' : 'left'}
+                    {Math.abs(remaining).toFixed(2)} {currency} {remaining < 0 ? 'over' : 'left'}
                   </span>
                 </div>
               </div>
@@ -241,14 +246,30 @@ export default function Budgets() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Budget Limit
                 </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.limit_amount}
-                  onChange={(e) => setFormData({ ...formData, limit_amount: e.target.value })}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.limit_amount}
+                    onChange={(e) => setFormData({ ...formData, limit_amount: e.target.value })}
+                    required
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                  <select
+                    value={formData.currency}
+                    onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                    className="w-24 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                  >
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="RON">RON</option>
+                  </select>
+                </div>
+                {formData.currency !== currency && (
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    Will be converted to {currency} using current exchange rates
+                  </p>
+                )}
               </div>
 
               <div className="flex gap-3 pt-4">
@@ -262,6 +283,7 @@ export default function Budgets() {
                       month: currentMonth,
                       year: currentYear,
                       limit_amount: '',
+                      currency: currency,
                     });
                   }}
                   className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
