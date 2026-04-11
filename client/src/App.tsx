@@ -9,7 +9,6 @@ import Dashboard from './pages/Dashboard.tsx';
 import Transactions from './pages/Transactions.tsx';
 import Categories from './pages/Categories.tsx';
 import Budgets from './pages/Budgets.tsx';
-import Settings from './pages/Settings.tsx';
 import Layout from './components/layout/Layout.tsx';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -61,7 +60,6 @@ function AppRoutes() {
           <Route path="transactions" element={<Transactions />} />
           <Route path="categories" element={<Categories />} />
           <Route path="budgets" element={<Budgets />} />
-          <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
     </Router>

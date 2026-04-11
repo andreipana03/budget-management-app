@@ -11,6 +11,7 @@ CREATE TABLE user_preferences (
     default_currency TEXT NOT NULL DEFAULT 'USD',
     date_format TEXT NOT NULL DEFAULT 'MM/DD/YYYY' CHECK (date_format IN ('MM/DD/YYYY', 'DD/MM/YYYY', 'YYYY-MM-DD')),
     week_start_day INTEGER NOT NULL DEFAULT 0 CHECK (week_start_day >= 0 AND week_start_day <= 6),
+    savings_goal DECIMAL(15, 2) CHECK (savings_goal IS NULL OR savings_goal >= 0),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
     UNIQUE(user_id)

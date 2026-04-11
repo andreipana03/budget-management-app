@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { useTheme } from '../../context/ThemeContext.tsx';
-import { Home, CreditCard, FolderOpen, PieChart, Settings, LogOut, Sun, Moon } from 'lucide-react';
+import { Home, CreditCard, FolderOpen, PieChart, LogOut, Sun, Moon } from 'lucide-react';
 
 export default function Layout() {
   const { signOut, user } = useAuth();
@@ -13,7 +13,6 @@ export default function Layout() {
     { name: 'Transactions', href: '/transactions', icon: CreditCard },
     { name: 'Categories', href: '/categories', icon: FolderOpen },
     { name: 'Budgets', href: '/budgets', icon: PieChart },
-    { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
   const isActive = (path: string) => {

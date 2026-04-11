@@ -4,6 +4,7 @@ import api from '../services/api.ts';
 import { Budget, Category } from '../types/index.ts';
 import CategoryIcon from '../components/categories/CategoryIcon.tsx';
 import { usePreferences } from '../context/PreferencesContext.tsx';
+import AutoBudgetWizard from '../components/budgets/AutoBudgetWizard.tsx';
 
 // Keywords used to classify categories into Needs vs Wants
 const NEEDS_KEYWORDS = [
@@ -35,6 +36,7 @@ export default function Budgets() {
 
   // Auto budgeting state
   const [showAutoBudget, setShowAutoBudget] = useState(false);
+  const [showAIWizard, setShowAIWizard] = useState(false);
   const [autoBuckets, setAutoBuckets] = useState({ needs: 50, wants: 30, savings: 20 });
   const [autoApplying, setAutoApplying] = useState(false);
   const [formData, setFormData] = useState({
@@ -50,6 +52,7 @@ export default function Budgets() {
   }, []);
 
   const fetchData = async () => {
+    setLoading(true);
     try {
       const [budgetsRes, categoriesRes, transactionsRes] = await Promise.all([
         api.get(`/budgets/status/${currentYear}/${currentMonth}`),
@@ -101,7 +104,7 @@ export default function Budgets() {
         limit_amount: '',
         currency: currency,
       });
-      fetchData();
+      await fetchData();
     } catch (error) {
       console.error('Error saving budget:', error);
     }
@@ -111,7 +114,7 @@ export default function Budgets() {
     if (!confirm('Are you sure you want to delete this budget?')) return;
     try {
       await api.delete(`/budgets/${id}`);
-      fetchData();
+      await fetchData();
     } catch (error) {
       console.error('Error deleting budget:', error);
     }
@@ -170,7 +173,7 @@ export default function Budgets() {
       );
 
       setShowAutoBudget(false);
-      fetchData();
+      await fetchData();
     } catch (error) {
       console.error('Auto budgeting error:', error);
     } finally {
@@ -193,7 +196,6 @@ export default function Budgets() {
   }
 
   const totalBudgeted = budgets.reduce((sum, b) => sum + convert(parseFloat(b.limit_amount.toString()), savedCurrency), 0);
-  const budgetedPercent = totalIncome > 0 ? Math.min((totalBudgeted / convert(totalIncome, savedCurrency)) * 100, 100) : 0;
 
   return (
     <div>
@@ -209,10 +211,16 @@ export default function Budgets() {
         </div>
         <div className="flex items-center gap-3">
           <button
+            onClick={() => setShowAIWizard(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-lg hover:from-violet-700 hover:to-indigo-700 transition-all shadow-sm"
+          >
+            <Sparkles className="w-4 h-4" />
+            AI Budgeting
+          </button>
+          <button
             onClick={() => setShowAutoBudget(true)}
             className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
           >
-            <Sparkles className="w-4 h-4" />
             Custom Budgeting
           </button>
           <button
@@ -220,7 +228,7 @@ export default function Budgets() {
             className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
           >
             <Plus className="w-5 h-5" />
-            Set Budget
+            Add Budget
           </button>
         </div>
       </div>
@@ -271,16 +279,24 @@ export default function Budgets() {
           )}
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Budget Coverage</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Remaining Budget</p>
           <div className="flex items-center gap-3">
             <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
               <div
-                className="h-2 rounded-full bg-violet-500 transition-all"
-                style={{ width: `${budgetedPercent}%` }}
+                className={`h-2 rounded-full transition-all ${
+                  totalBudgeted > 0 && ((totalBudgeted - convert(totalExpenses, savedCurrency)) / totalBudgeted) * 100 >= 20
+                    ? 'bg-violet-500'
+                    : totalBudgeted > 0 && ((totalBudgeted - convert(totalExpenses, savedCurrency)) / totalBudgeted) * 100 >= 10
+                    ? 'bg-yellow-500'
+                    : 'bg-red-500'
+                }`}
+                style={{ 
+                  width: `${totalBudgeted > 0 ? Math.max(0, Math.min(((totalBudgeted - convert(totalExpenses, savedCurrency)) / totalBudgeted) * 100, 100)) : 0}%` 
+                }}
               />
             </div>
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-12 text-right">
-              {budgetedPercent.toFixed(0)}%
+              {totalBudgeted > 0 ? Math.max(0, ((totalBudgeted - convert(totalExpenses, savedCurrency)) / totalBudgeted) * 100).toFixed(0) : 0}%
             </span>
           </div>
         </div>
@@ -295,7 +311,7 @@ export default function Budgets() {
               onClick={() => setShowModal(true)}
               className="mt-4 text-primary-600 hover:text-primary-700 dark:text-primary-400"
             >
-              Set your first budget
+              Add your first budget
             </button>
           </div>
         ) : (
@@ -324,6 +340,11 @@ export default function Budgets() {
                       <p className="text-sm text-gray-500 dark:text-gray-400">
                         {spent.toFixed(2)} {currency} of {limit.toFixed(2)} {currency}
                       </p>
+                      {totalIncome > 0 && (
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                          {((limit / convert(totalIncome, savedCurrency)) * 100).toFixed(1)}% of income
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -383,7 +404,7 @@ export default function Budgets() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-              {editingBudget ? 'Edit Budget' : 'Set Budget'}
+              {editingBudget ? 'Edit Budget' : 'Add Budget'}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -458,13 +479,30 @@ export default function Budgets() {
                   type="submit"
                   className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
                 >
-                  {editingBudget ? 'Update' : 'Set Budget'}
+                  {editingBudget ? 'Update' : 'Add Budget'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+      {/* AI Budget Wizard */}
+      {showAIWizard && (
+        <AutoBudgetWizard
+          categories={categories}
+          monthlyIncome={totalIncome}
+          currency={currency}
+          currentMonth={currentMonth}
+          currentYear={currentYear}
+          onApplied={async () => { 
+            setShowAIWizard(false); 
+            await fetchData(); 
+          }}
+          onClose={() => setShowAIWizard(false)}
+          setSavingsGoal={setSavingsGoal}
+        />
+      )}
+
       {/* Savings Goal Modal */}
       {editingGoal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
