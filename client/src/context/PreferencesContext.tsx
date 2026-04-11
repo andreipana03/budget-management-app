@@ -7,11 +7,12 @@ type RateMap = Record<string, Record<string, number>>;
 
 interface PreferencesContextValue {
   currency: string;
-  savedCurrency: string; // the currency stored in DB (what converted_amount is in)
+  savedCurrency: string;
   setCurrency: (c: string) => void;
-  /** Convert `amount` from `fromCurrency` to the current display currency */
   convert: (amount: number, fromCurrency: string) => number;
   fmt: (amount: number, fromCurrency?: string) => string;
+  savingsGoal: number | null;
+  setSavingsGoal: (goal: number | null) => Promise<void>;
 }
 
 const PreferencesContext = createContext<PreferencesContextValue>({
@@ -20,6 +21,8 @@ const PreferencesContext = createContext<PreferencesContextValue>({
   setCurrency: () => {},
   convert: (n) => n,
   fmt: (n) => `${n.toFixed(2)} USD`,
+  savingsGoal: null,
+  setSavingsGoal: async () => {},
 });
 
 export function PreferencesProvider({ children }: { children: ReactNode }) {
@@ -27,6 +30,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [currency, setCurrencyState] = useState('USD');
   const [savedCurrency, setSavedCurrency] = useState('USD');
   const [rates, setRates] = useState<RateMap>({});
+  const [savingsGoal, setSavingsGoalState] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -38,9 +42,17 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         setCurrencyState(prefRes.data.default_currency);
         setSavedCurrency(prefRes.data.default_currency);
       }
+      if (prefRes.data?.savings_goal != null) {
+        setSavingsGoalState(prefRes.data.savings_goal);
+      }
       if (ratesRes.data) setRates(ratesRes.data);
     }).catch(() => {});
   }, [user]);
+
+  const setSavingsGoal = useCallback(async (goal: number | null) => {
+    setSavingsGoalState(goal);
+    await api.put('/preferences', { savings_goal: goal });
+  }, []);
 
   const setCurrency = useCallback((c: string) => {
     setCurrencyState(c);
@@ -59,7 +71,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   }, [convert, currency]);
 
   return (
-    <PreferencesContext.Provider value={{ currency, savedCurrency, setCurrency, convert, fmt }}>
+    <PreferencesContext.Provider value={{ currency, savedCurrency, setCurrency, convert, fmt, savingsGoal, setSavingsGoal }}>
       {children}
     </PreferencesContext.Provider>
   );

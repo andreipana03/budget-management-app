@@ -54,6 +54,7 @@ export interface UserPreferences {
   default_currency: string;
   date_format: string;
   week_start_day: number;
+  savings_goal?: number | null;
   created_at: string;
   updated_at: string;
 }

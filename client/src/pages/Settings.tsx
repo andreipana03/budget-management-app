@@ -119,8 +119,6 @@ export default function Settings() {
               <option value="USD">USD - US Dollar</option>
               <option value="EUR">EUR - Euro</option>
               <option value="RON">RON - Romanian Leu</option>
-              <option value="GBP">GBP - British Pound</option>
-              <option value="JPY">JPY - Japanese Yen</option>
             </select>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               All transactions will be converted to this currency

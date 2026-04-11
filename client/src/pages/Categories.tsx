@@ -4,6 +4,7 @@ import api from '../services/api.ts';
 import { Category } from '../types/index.ts';
 import CategoryIcon from '../components/categories/CategoryIcon.tsx';
 import IconPicker from '../components/categories/IconPicker.tsx';
+import { suggestEmoji } from '../utils/autoEmoji.ts';
 
 export default function Categories() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -12,6 +13,7 @@ export default function Categories() {
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
+  const [iconManuallySet, setIconManuallySet] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     type: 'expense' as 'expense' | 'income',
@@ -42,6 +44,7 @@ export default function Categories() {
       }
       setShowModal(false);
       setEditingCategory(null);
+      setIconManuallySet(false);
       setFormData({ name: '', type: 'expense', color: '#10B981', icon: '' });
       fetchCategories();
     } catch (error) {
@@ -61,6 +64,7 @@ export default function Categories() {
 
   const handleEdit = (category: Category) => {
     setEditingCategory(category);
+    setIconManuallySet(true); // editing existing — treat icon as locked
     setFormData({ name: category.name, type: category.type, color: category.color, icon: category.icon || '' });
     setShowModal(true);
   };
@@ -68,8 +72,8 @@ export default function Categories() {
   const filteredCategories = categories
     .filter((cat) => cat.type === activeTab)
     .sort((a, b) => {
-      if (a.name === 'Other') return 1;
-      if (b.name === 'Other') return -1;
+      if (a.name === 'Others') return 1;
+      if (b.name === 'Others') return -1;
       return a.name.localeCompare(b.name);
     });
 
@@ -135,7 +139,7 @@ export default function Categories() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Categories</h1>
         <button
-          onClick={() => { setFormData({ ...formData, type: activeTab }); setCustomHex(''); setHexError(false); setShowModal(true); }}
+          onClick={() => { setFormData({ ...formData, type: activeTab }); setIconManuallySet(false); setCustomHex(''); setHexError(false); setShowModal(true); }}
           className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
         >
           <Plus className="w-5 h-5" />
@@ -169,7 +173,7 @@ export default function Categories() {
               </div>
             </div>
             <div className="flex gap-2">
-              {category.name !== 'Other' && (
+              {category.name !== 'Others' && (
                 <>
                   <button onClick={() => handleEdit(category)} className="p-2 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded">
                     <Pencil className="w-4 h-4" />
@@ -193,6 +197,11 @@ export default function Categories() {
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+            {editingCategory && formData.icon && (
+              <div className="flex justify-center mb-4">
+                <CategoryIcon icon={formData.icon} color={formData.color} size="lg" />
+              </div>
+            )}
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
               {editingCategory ? 'Edit Category' : 'Add Category'}
             </h2>
@@ -202,7 +211,15 @@ export default function Categories() {
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    if (!iconManuallySet) {
+                      const suggested = suggestEmoji(name);
+                      setFormData({ ...formData, name, icon: suggested });
+                    } else {
+                      setFormData({ ...formData, name });
+                    }
+                  }}
                   required
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
@@ -220,7 +237,7 @@ export default function Categories() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Icon</label>
-                <IconPicker value={formData.icon} onChange={(icon) => setFormData({ ...formData, icon })} />
+                <IconPicker value={formData.icon} onChange={(icon) => { setIconManuallySet(true); setFormData({ ...formData, icon }); }} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Color</label>
@@ -310,7 +327,7 @@ export default function Categories() {
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => { setShowModal(false); setEditingCategory(null); setFormData({ name: '', type: 'expense', color: '#10B981', icon: '' }); setCustomHex(''); setHexError(false); setShowColorPicker(false); }}
+                  onClick={() => { setShowModal(false); setEditingCategory(null); setIconManuallySet(false); setFormData({ name: '', type: 'expense', color: '#10B981', icon: '' }); setCustomHex(''); setHexError(false); setShowColorPicker(false); }}
                   className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   Cancel
@@ -343,7 +360,7 @@ export default function Categories() {
               </button>
               <button onClick={() => handleDelete(deleteTarget.id, 'reassign')} className="w-full px-4 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors text-sm font-medium text-left">
                 <span className="font-semibold">Delete category only</span>
-                <p className="text-yellow-100 text-xs mt-0.5">Transactions will be moved to the "Other" category</p>
+                <p className="text-yellow-100 text-xs mt-0.5">Transactions will be moved to the "Others" category</p>
               </button>
               <button onClick={() => setDeleteTarget(null)} className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium">
                 Cancel

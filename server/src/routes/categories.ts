@@ -42,7 +42,7 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
         name,
         type,
         color: color || '#3B82F6',
-        icon: icon || 'circle',
+        icon: icon || '',
         is_default: false,
       })
       .select()
@@ -62,7 +62,7 @@ router.put('/:id', authenticate, async (req: AuthRequest, res) => {
   try {
     const { name, color, icon } = req.body;
 
-    // Prevent editing the "Other" category
+    // Prevent editing the "Others" category
     const { data: existing } = await supabase
       .from('categories')
       .select('name')
@@ -70,8 +70,8 @@ router.put('/:id', authenticate, async (req: AuthRequest, res) => {
       .eq('user_id', req.user!.id)
       .single();
 
-    if (existing?.name === 'Other') {
-      return res.status(403).json({ error: 'The "Other" category cannot be edited' });
+    if (existing?.name === 'Others') {
+      return res.status(403).json({ error: 'The "Others" category cannot be edited' });
     }
 
     const { data, error } = await supabase
@@ -93,7 +93,7 @@ router.put('/:id', authenticate, async (req: AuthRequest, res) => {
 
 // Delete category
 // ?mode=with_transactions → delete category + all its transactions
-// ?mode=reassign (default) → reassign transactions to user's "Other" category, then delete
+// ?mode=reassign (default) → reassign transactions to user's "Others" category, then delete
 router.delete('/:id', authenticate, async (req: AuthRequest, res) => {
   try {
     const { mode } = req.query;
@@ -112,9 +112,9 @@ router.delete('/:id', authenticate, async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'Category not found' });
     }
 
-    // Prevent deleting the "Other" category
-    if (category.name === 'Other') {
-      return res.status(403).json({ error: 'The "Other" category cannot be deleted' });
+    // Prevent deleting the "Others" category
+    if (category.name === 'Others') {
+      return res.status(403).json({ error: 'The "Others" category cannot be deleted' });
     }
 
     if (mode === 'with_transactions') {
@@ -127,13 +127,13 @@ router.delete('/:id', authenticate, async (req: AuthRequest, res) => {
 
       if (txError) throw txError;
     } else {
-      // Reassign transactions to the user's "Other" category of the same type
+      // Reassign transactions to the user's "Others" category of the same type
       const { data: otherCategory } = await supabase
         .from('categories')
         .select('id')
         .eq('user_id', userId)
         .eq('type', category.type)
-        .eq('name', 'Other')
+        .eq('name', 'Others')
         .single();
 
       if (otherCategory) {

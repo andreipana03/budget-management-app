@@ -25,7 +25,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
 // Update user preferences
 router.put('/', authenticate, async (req: AuthRequest, res) => {
   try {
-    const { theme, default_currency, date_format, week_start_day } = req.body;
+    const { theme, default_currency, date_format, week_start_day, savings_goal } = req.body;
 
     const { data, error } = await supabase
       .from('user_preferences')
@@ -34,6 +34,7 @@ router.put('/', authenticate, async (req: AuthRequest, res) => {
         default_currency,
         date_format,
         week_start_day,
+        savings_goal: savings_goal !== undefined ? savings_goal : undefined,
       })
       .eq('user_id', req.user!.id)
       .select()
