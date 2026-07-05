@@ -27,16 +27,13 @@ export default function Register() {
     setLoading(true);
 
     try {
-      const data = await signUp(email, password);
+      const result = await signUp(email, password);
       
-      // Check if email confirmation is required
-      if (data?.user && !data?.session) {
+      if (result.requiresConfirmation) {
         setSuccess(true);
         setError('');
-      } else if (data?.session) {
-        // User is automatically logged in (email confirmation disabled)
-        // Will be redirected by the auth state change
       }
+      // If no confirmation needed, auth state change will redirect automatically
     } catch (err: any) {
       console.error('Signup error:', err);
       setError(err.message || 'Failed to create account');

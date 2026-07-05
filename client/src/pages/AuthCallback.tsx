@@ -6,10 +6,8 @@ export default function AuthCallback() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Handle the OAuth callback
     const handleCallback = async () => {
       try {
-        // Get the session from the URL hash
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -19,10 +17,8 @@ export default function AuthCallback() {
         }
 
         if (session) {
-          // Successfully authenticated, redirect to dashboard
           navigate('/');
         } else {
-          // No session, redirect to login
           navigate('/login');
         }
       } catch (error) {
